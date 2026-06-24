@@ -39,7 +39,7 @@ I filtered ARP responses using:
 
 The results showed multiple ARP replies, including unsolicited responses that warranted further investigation.
 
-![ARP Responses](arp_opcode_2.png)
+![ARP Responses](arp.opcode==2.png)
 
 ### 4. Identify Gratuitous ARP Replies
 
