@@ -49,6 +49,8 @@ I searched for gratuitous ARP traffic using:
 
 These packets are often associated with ARP cache poisoning because they advertise IP-to-MAC mappings without a corresponding request.
 
+![Gratuitous ARP Replies](gratuitous_arp.png)
+
 ### 5. Investigate Gateway Traffic
 
 I focused on traffic associated with the gateway IP address (192.168.10.1) and observed repeated ARP replies claiming ownership of the gateway address.
