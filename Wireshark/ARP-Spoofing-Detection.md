@@ -19,6 +19,10 @@ I filtered for ARP traffic using:
 
 This allowed me to view all ARP requests and responses and establish a baseline of normal network behavior.
 
+![ARP Requests](../arp.opcode%20==1.png)
+
+*Figure 1: ARP requests displayed in Wireshark using the filter `arp.opcode == 1`.*
+
 ### 2. Examine ARP Requests
 
 I filtered ARP requests using:
@@ -34,6 +38,8 @@ I filtered ARP responses using:
 `arp.opcode == 2`
 
 The results showed multiple ARP replies, including unsolicited responses that warranted further investigation.
+
+![ARP Responses](../arp.opcode==2.png)
 
 ### 4. Identify Gratuitous ARP Replies
 
