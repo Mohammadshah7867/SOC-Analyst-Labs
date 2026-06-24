@@ -55,6 +55,8 @@ These packets are often associated with ARP cache poisoning because they adverti
 
 I focused on traffic associated with the gateway IP address (192.168.10.1) and observed repeated ARP replies claiming ownership of the gateway address.
 
+![Gateway Traffic](gateway_traffic.png)
+
 ### 6. Detect ARP Spoofing
 
 Further analysis revealed that the MAC address `02:fe:fe:fe:55:55` repeatedly associated itself with the gateway IP address. This behavior is consistent with ARP spoofing.
@@ -62,6 +64,8 @@ Further analysis revealed that the MAC address `02:fe:fe:fe:55:55` repeatedly as
 ### 7. Validate Duplicate IP-to-MAC Mappings
 
 Using Wireshark's duplicate address detection filters, I confirmed that multiple MAC addresses claimed the same IP address, indicating a successful ARP poisoning attempt.
+
+![Duplicate IP-to-MAC Mapping](duplicate_ip_mapping.png)
 
 ## Findings
 
