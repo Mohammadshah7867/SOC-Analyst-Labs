@@ -22,12 +22,12 @@ Learn the fundamentals of Splunk Search & Reporting by performing searches, filt
 Query:
 `index=windowslogs`
 
-*(Insert screenshot here)*
+![Initial Search](initial_search.png)
 
 ### 2. SourceIP Analysis
-Brief explanation...
+I reviewed the SourceAddress field to identify the IP addresses generating the most events in the Windows logs.
 
-*(Insert screenshot)*
+![Source Address Analysis](source_address_analysis.png)
 
 ### 3. Time Filtering
 Brief explanation...
