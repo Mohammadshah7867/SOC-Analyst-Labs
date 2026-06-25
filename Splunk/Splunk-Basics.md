@@ -30,9 +30,9 @@ I reviewed the SourceAddress field to identify the IP addresses generating the m
 ![Source Address Analysis](source_address_analysis.png)
 
 ### 3. Time Filtering
-Brief explanation...
+I used Splunk's Date Time Range filter to narrow the search to events occurring between 08:05 AM and 08:06 AM on April 15, 2022. Time filtering helps analysts focus on activity during a specific incident window.
 
-*(Insert screenshot)*
+![Time Filtering](time_filtering.png)
 
 ### 4. Search Operators
 Brief explanation...
