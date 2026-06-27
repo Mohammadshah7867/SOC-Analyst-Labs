@@ -100,6 +100,18 @@ index=windowslogs
 
 ![Rename Command](rename_command.png)
 
+#### 5.4 Regex Command
+
+I used the `regex` command to filter events using a regular expression. This query returned only events where the `Image` field ended with `.exe`, allowing me to focus on executable files. Regular expressions are powerful for identifying patterns in log data and are commonly used during threat hunting, malware analysis, and forensic investigations.
+
+Query:
+```spl
+index=windowslogs
+| regex Image="\.exe$"
+```
+
+![Regex Command](regex_command.png)
+
 ### 6. Transforming Commands
 Brief explanation...
 
