@@ -141,6 +141,45 @@ I used the `table` and `reverse` commands to organize events into a chronologica
 
 ![Timeline with Reverse](timeline_reverse.png)
 
+7. Transforming Commands
+
+## 7.1 Top Command
+
+The `top` command was used to identify the most frequently occurring process images in the Windows event logs. This allows analysts to quickly establish a baseline of normal activity and identify processes that appear unusually often during an investigation.
+
+### SPL Query
+```spl
+index=windowslogs
+| top Image limit=5
+```
+
+### Result
+The search returned the five most common process images. The most frequent process was **C:\Windows\System32\svchost.exe**, a legitimate Windows system process that commonly hosts Windows services.
+
+### Screenshot
+
+![Top Command](top-command-process-frequency.png)
+
+## 7.2 Highlight Command
+
+The `highlight` command was used to visually emphasize important fields and keywords within raw Windows event logs. Highlighting values such as usernames, event IDs, process images, and event descriptions makes it easier to quickly identify relevant information during an investigation without manually scanning every log entry.
+
+### SPL Query
+
+```spl
+index=windowslogs
+| highlight User EventID Image "Process accessed"
+```
+
+### Result
+
+The search highlighted key fields directly in the raw event data, allowing important information such as the user account, process image, Event ID, and the **"Process accessed"** event description to stand out immediately.
+
+### Screenshot
+
+![Highlight Command](highlight-command.png)
+
+
 
 
 
