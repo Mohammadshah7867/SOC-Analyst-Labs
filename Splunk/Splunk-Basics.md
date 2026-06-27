@@ -127,6 +127,20 @@ I used the `table` command to display only the most relevant fields in a structu
 
 ![Table Command](table_command.png)
 
+#### 6.2 Timeline with Reverse
+
+Query:
+
+```spl
+index=windowslogs Hostname=James.browne
+| table _time Hostname EventID Category
+| reverse
+```
+
+I used the `table` and `reverse` commands to organize events into a chronological timeline for a specific host. Displaying only the timestamp, hostname, event ID, and category made it easier to follow the sequence of activity and understand how events occurred during the investigation.
+
+![Timeline with Reverse](timeline_reverse.png)
+
 
 
 
