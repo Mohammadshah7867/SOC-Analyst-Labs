@@ -113,9 +113,22 @@ index=windowslogs
 ![Regex Command](regex_command.png)
 
 ### 6. Transforming Commands
-Brief explanation...
 
-*(Insert screenshot)*
+#### 6.1 Table Command
+
+Query:
+
+```spl
+index=windowslogs
+| table _time EventID Hostname SourceName
+```
+
+I used the `table` command to display only the most relevant fields in a structured format. This makes the search results much easier to read by removing unnecessary information and presenting the data in a clean table.
+
+![Table Command](table_command.png)
+
+
+
 
 ### Findings
 - Successfully searched Windows logs.
