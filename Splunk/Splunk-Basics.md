@@ -74,6 +74,19 @@ index=windowslogs
 
 ![Fields Command](fields_command.png)
 
+#### 5.2 Dedup Command
+
+I used the `dedup` command to remove duplicate `SourceIp` values from the search results. This returned only one event for each unique source IP address, reducing the results to seven unique events. Using `dedup` helps eliminate repetitive log entries and allows analysts to quickly identify distinct systems communicating on the network.
+
+Query:
+```spl
+index=windowslogs
+| fields Hostname User SourceIp Image EventID
+| dedup SourceIp
+```
+
+![Dedup Command](dedup_command.png)
+
 ### 6. Transforming Commands
 Brief explanation...
 
