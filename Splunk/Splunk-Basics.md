@@ -61,9 +61,18 @@ I used the wildcard operator (`*`) to search for all events where the destinatio
 
 
 ### 5. Structuring Results
-Brief explanation...
 
-*(Insert screenshot)*
+#### 5.1 Fields Command
+
+I used the `fields` command to display only the most important information from the Windows logs. By limiting the output to the `Hostname`, `User`, `SourceIp`, `Image`, and `EventID` fields, I removed unnecessary data and made the results easier to read during the investigation. This allowed me to focus on the most relevant information without being distracted by hundreds of other fields in each event.
+
+Query:
+```spl
+index=windowslogs
+| fields Hostname User SourceIp Image EventID
+```
+
+![Fields Command](fields_command.png)
 
 ### 6. Transforming Commands
 Brief explanation...
