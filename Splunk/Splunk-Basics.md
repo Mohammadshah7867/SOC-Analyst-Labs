@@ -36,11 +36,12 @@ I used Splunk's Date Time Range filter to narrow the search to events occurring 
 
 ### 4. Search Operators
 
+### 4.1 Relational Operator (!=)
 I used the `!=` search operator to exclude events where the `AccountName` was `SYSTEM`. This allowed me to focus on user-generated activity instead of system-generated events, making it easier to analyze relevant logs.
 
 ![Search Operators](search_operators.png)
 
-### 4.1 Search Operators (Logical Operator - AND)
+### 4.2 Search Operators (Logical Operator - AND)
 
 Query:
 `index=windowslogs AccountName!=SYSTEM AND AccountName=James`
@@ -49,7 +50,7 @@ I used the `AND` logical operator to combine multiple search conditions in a sin
 
 ![Logical Operator (AND)](logical_operator_and.png)
 
-### 4.2 Search Operators (Wildcard Search)
+#### 4.3 Wildcard Search (*)
 
 Query:
 `index=windowslogs DestinationIp=172.*`
