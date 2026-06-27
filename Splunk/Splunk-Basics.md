@@ -87,6 +87,19 @@ index=windowslogs
 
 ![Dedup Command](dedup_command.png)
 
+#### 5.3 Rename Command
+
+I used the `rename` command to change the `User` field to `Employee`, making the search results easier to understand. Renaming fields improves readability and creates clearer reports without modifying the original log data. This is especially useful when presenting findings to other analysts or non-technical stakeholders.
+
+Query:
+```spl
+index=windowslogs
+| fields Hostname User SourceIp Image EventID
+| rename User as Employee
+```
+
+![Rename Command](rename_command.png)
+
 ### 6. Transforming Commands
 Brief explanation...
 
