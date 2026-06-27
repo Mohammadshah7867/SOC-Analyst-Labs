@@ -237,6 +237,32 @@ The visualization displayed the five most common process images over 30-minute i
 
 ![Timechart Command](timechart_command.png)
 
+## 7.6 IP Location Command
+
+The `iplocation` command enriches events with geographic information based on IP addresses. This helps analysts identify the geographic origin of network activity.
+
+### SPL Query
+
+```spl
+index=windowslogs Image!=""
+| iplocation SourceIp
+| stats count by Country
+```
+
+### Result
+
+The query enriched the source IP addresses and summarized the events by country. In this dataset, the source IP addresses resolved to the **United States**.
+
+### Screenshot
+
+![IP Location Command](iplocation_command.png)
+
+### Findings
+
+- Added geographic information to Source IP addresses.
+- Grouped events by country.
+- All resolved IP addresses were located in the United States.
+
 ### Findings
 
 - Displayed process activity over time.
