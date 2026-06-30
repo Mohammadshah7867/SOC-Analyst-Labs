@@ -297,6 +297,76 @@ The query translated numeric logon types into descriptive values and displayed t
 
 ![Eval Command](eval_command.png)
 
+# 8. Anomaly Detection
+
+Anomaly detection helps identify suspicious login activity by comparing current events against a user's normal behavior. These SPL queries use statistical analysis to detect rare login locations and unusual login times.
+
+---
+
+## 8.1 Detecting Anomalous Login Countries
+
+This query calculates how often each user logs in from a specific country. Any country that accounts for less than 10% of a user's logins is flagged as an anomaly.
+
+### SPL Query
+
+```spl
+index=vpnlogs
+| eventstats count as logins_by_user by user
+| eventstats count as logins_by_user_country by user src_country
+| eval country_freq=logins_by_user_country/logins_by_user
+| where country_freq < 0.1
+| table _time user src_ip src_country country_freq
+```
+
+### Result
+
+The query identified users who logged in from countries that they rarely use. These unusual locations may indicate VPN usage or a compromised account.
+
+### Screenshot
+
+![Country Anomaly Detection](anomaly_country_detection.png)
+
+### Findings
+
+- Calculated login frequency by user and country.
+- Identified rare login locations.
+- Highlighted potentially suspicious authentication activity.
+
+---
+
+## 8.2 Detecting Anomalous Login Hours
+
+This query compares each user's login time against their historical login behavior by calculating a z-score. Logins that are significantly different from the user's normal pattern are identified as anomalies.
+
+### SPL Query
+
+```spl
+index=vpnlogs
+| eval hour=tonumber(strftime(_time,"%H")) + tonumber(strftime(_time,"%M"))/60
+| eventstats avg(hour) as typical_hour stdev(hour) as stdev_hour by user
+| eval zscore=abs(hour-typical_hour)/stdev_hour
+| where zscore > 3
+| eval hour=round(hour,2), typical_hour=round(typical_hour,2)
+| eval stdev_hour=round(stdev_hour,2), zscore=round(zscore,2)
+| table _time user src_ip src_country hour typical_hour stdev_hour zscore
+| sort - hour_zscore
+```
+
+### Result
+
+The query detected users whose login times were significantly different from their normal behavior. These events may indicate compromised accounts or unusual activity requiring further investigation.
+
+### Screenshot
+
+![Hour Anomaly Detection](anomaly_hour_detection.png)
+
+### Findings
+
+- Calculated each user's normal login time.
+- Measured deviations using a z-score.
+- Flagged logins that occurred outside normal behavior patterns.
+- Identified anomalous login activity for further investigation.
+
 ### Findings
 
 - Created a new field using the `eval` command.
