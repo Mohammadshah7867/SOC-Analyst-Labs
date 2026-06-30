@@ -418,3 +418,12 @@ The query detected users whose login times were significantly different from the
 - Log Analysis
 - Windows Event Logs
 - SOC Investigation
+
+## References
+
+This project was completed as part of the **TryHackMe – Splunk: Exploring SPL** room. The screenshots, SPL queries, explanations, and analysis in this repository were completed by me while working through the lab environment.
+
+### Resources
+
+- TryHackMe. *Splunk: Exploring SPL*. https://tryhackme.com/
+- Splunk Documentation. *Search Reference*. https://docs.splunk.com/Documentation/Splunk/latest/SearchReference
