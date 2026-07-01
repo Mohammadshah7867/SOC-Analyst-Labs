@@ -33,9 +33,10 @@ cd /opt/splunk/bin
 
 ![Splunk Start](splunk_start.png)
 
-**Findings** - Started Splunk Enterprise successfully. - Generated
-startup certificates and configuration. - Verified Splunk Web on port
-8000.
+**Findings** -
+Started Splunk Enterprise successfully.
+Generated startup certificates and configuration.
+Verified Splunk Web on port 8000.
 
 ------------------------------------------------------------------------
 
@@ -43,8 +44,9 @@ startup certificates and configuration. - Verified Splunk Web on port
 
 ![Splunk Dashboard](splunk_dashboard.png)
 
-**Findings** - Logged in with the administrator account. - Verified the
-Splunk Web interface was operational.
+**Findings** - 
+Logged in with the administrator account.
+Verified the Splunk Web interface was operational.
 
 ------------------------------------------------------------------------
 
@@ -52,7 +54,8 @@ Splunk Web interface was operational.
 
 ![Splunk Home](splunk_home.png)
 
-**Findings** - Confirmed access to the Splunk Home page.
+**Findings** - 
+Confirmed access to the Splunk Home page.
 
 ------------------------------------------------------------------------
 
@@ -172,6 +175,10 @@ logs.
 -   Index Management
 -   Splunk Search & Reporting
 -   SIEM Deployment
+  
+## Conclusion
+
+This lab demonstrated the end-to-end deployment of Splunk Enterprise in a Linux environment. I installed and configured Splunk Enterprise, deployed and configured a Splunk Universal Forwarder, created custom indexes, configured data ingestion, verified successful log forwarding, explored Deployment Server functionality, and ingested Apache web server logs. Completing this lab strengthened my understanding of SIEM deployment, centralized logging, and Splunk administration in a SOC environment.
 
 ## Resources
 
