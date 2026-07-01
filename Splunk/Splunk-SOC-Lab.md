@@ -70,7 +70,65 @@ After logging in with the administrator account, the Splunk Enterprise dashboard
 - Command Line
 - SIEM Deployment
 - Web Interface Configuration
+---
 
-## Reference
+## 3. Splunk Home
 
-TryHackMe. *Splunk: Setting Up a SOC Lab*. https://tryhackme.com
+After signing in with the administrator account, the Splunk Home page loaded successfully. This confirmed that the installation was successful and that the Splunk web interface was fully operational.
+
+### Screenshot
+
+![Splunk Home](splunk_home.png)
+
+---
+
+# 4. Verifying Splunk Status
+
+The `splunk status` command was used to verify that the Splunk Enterprise services were running correctly after installation.
+
+### Command
+
+```bash
+./splunk status
+```
+
+### Screenshot
+
+![Splunk Status](splunk_status.png)
+
+### Findings
+
+- Verified that the `splunkd` service was running successfully.
+- Confirmed that all required helper processes were active.
+- Validated that the Splunk installation was operating correctly.
+- Confirmed the Splunk server was ready for use.
+
+---
+
+# 5. Splunk CLI Help
+
+The `splunk help` command was used to display the available command-line options for administering and managing Splunk Enterprise.
+
+### Command
+
+```bash
+./splunk help
+```
+
+### Screenshot
+
+![Splunk CLI Help](splunk_help.png)
+
+### Findings
+
+- Displayed the available Splunk CLI commands.
+- Reviewed command syntax and administrative options.
+- Demonstrated the use of the Splunk command-line interface.
+- Verified access to built-in command documentation.
+
+### Findings
+
+- Successfully authenticated using the administrator account.
+- Verified access to the Splunk Home interface.
+- Confirmed the installation and configuration were successful.
+- Splunk was ready for log ingestion and analysis.
