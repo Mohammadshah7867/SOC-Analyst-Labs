@@ -64,7 +64,8 @@ Splunk Web interface was operational.
 
 ![Splunk Status](splunk_status.png)
 
-**Findings** - Verified `splunkd` and helper processes were running.
+**Findings** - 
+Verified `splunkd` and helper processes were running.
 
 ------------------------------------------------------------------------
 
@@ -76,7 +77,8 @@ Splunk Web interface was operational.
 
 ![Splunk CLI Help](splunk_help.png)
 
-**Findings** - Reviewed available administrative CLI commands.
+**Findings** - 
+Reviewed available administrative CLI commands.
 
 ------------------------------------------------------------------------
 
@@ -90,7 +92,8 @@ Splunk Web interface was operational.
 
 ![Splunk Universal Forwarder Status](splunk_forwarder_status.png)
 
-**Findings** - Installed and verified the Universal Forwarder. -
+**Findings** - 
+Installed and verified the Universal Forwarder. 
 Resolved the management port conflict by using port **8090**.
 
 ------------------------------------------------------------------------
@@ -113,8 +116,10 @@ Resolved the management port conflict by using port **8090**.
 
 ![Linux Host Search](linux_host_log_search.png)
 
-**Findings** - Enabled receiving on TCP 9997. - Created the
-**linux_host** index. - Configured the Universal Forwarder to monitor
+**Findings** - 
+Enabled receiving on TCP 9997. - Created the
+**linux_host** index.
+Configured the Universal Forwarder to monitor
 `/var/log/syslog`. - Verified successful log ingestion.
 
 ------------------------------------------------------------------------
@@ -129,7 +134,8 @@ Resolved the management port conflict by using port **8090**.
 
 ![Deployment Server Interface](deployment_server_forwarders.png)
 
-**Note:** This TryHackMe lab only provides a Linux VM. The Windows Event
+**Note:** 
+This TryHackMe lab only provides a Linux VM. The Windows Event
 Log configuration shown in the lab documentation is informational only.
 
 ------------------------------------------------------------------------
@@ -148,9 +154,11 @@ Log configuration shown in the lab documentation is informational only.
 
 ![Apache Logs Search](apache_logs_search.png)
 
-**Findings** - Configured Splunk to monitor
+**Findings**
+Configured Splunk to monitor
 `/var/log/apache2/access.log`. - Used the `access_combined`
-sourcetype. - Verified successful ingestion and searching of Apache web
+sourcetype.
+Verified successful ingestion and searching of Apache web
 logs.
 
 ------------------------------------------------------------------------
