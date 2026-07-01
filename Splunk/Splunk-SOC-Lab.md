@@ -18,8 +18,6 @@ Install and configure Splunk Enterprise on Ubuntu Linux, create an administrator
 - Command Line
 - SIEM Deployment
 
----
-
 ## 1. Starting Splunk
 
 The Splunk Enterprise service was started from the terminal after installation. During startup, Splunk initialized its services, generated the required certificates, and launched the Splunk Web interface on the default port (8000).
@@ -41,11 +39,8 @@ cd /opt/splunk/bin
 - Generated the required startup configuration and certificates.
 - Confirmed the Splunk Web interface was available on port **8000**.
 - Verified the installation completed successfully.
----
 
----
-
-## 3. Splunk Dashboard
+## 2. Splunk Dashboard
 
 After logging in with the administrator account, the Splunk Enterprise dashboard was successfully loaded. This confirmed that the installation and configuration were completed correctly and that the web interface was fully operational.
 
@@ -59,8 +54,6 @@ After logging in with the administrator account, the Splunk Enterprise dashboard
 - Verified access to the Splunk Enterprise dashboard.
 - Confirmed the installation and initial configuration were successful.
 - Splunk was ready for log ingestion and analysis.
-
----
 
 ## Skills Demonstrated
 
@@ -79,8 +72,6 @@ After signing in with the administrator account, the Splunk Home page loaded suc
 ### Screenshot
 
 ![Splunk Home](splunk_home.png)
-
----
 
 # 4. Verifying Splunk Status
 
@@ -103,8 +94,6 @@ The `splunk status` command was used to verify that the Splunk Enterprise servic
 - Validated that the Splunk installation was operating correctly.
 - Confirmed the Splunk server was ready for use.
 
----
-
 # 5. Splunk CLI Help
 
 The `splunk help` command was used to display the available command-line options for administering and managing Splunk Enterprise.
@@ -119,9 +108,7 @@ The `splunk help` command was used to display the available command-line options
 
 ![Splunk CLI Help](splunk_help.png)
 
----
-
-# 5. Splunk Universal Forwarder Installation
+# 5.1 Splunk Universal Forwarder Installation
 
 The Splunk Universal Forwarder was installed on the same Ubuntu system as the Splunk Enterprise instance. During startup, a management port conflict was detected because Splunk Enterprise was already using port **8089**. The forwarder was successfully configured to use **port 8090**, allowing both services to run simultaneously.
 
@@ -136,8 +123,6 @@ The Splunk Universal Forwarder was installed on the same Ubuntu system as the Sp
 - Reconfigured the forwarder to use management port **8090**.
 - Successfully started the Universal Forwarder without errors.
 - Verified the installation completed successfully.
-
----
 
 # 6. Splunk Universal Forwarder Status
 
@@ -154,10 +139,6 @@ After installation, the Universal Forwarder status was verified using the Splunk
 - Verified all helper processes were running successfully.
 - Confirmed the forwarder was ready for data forwarding and log collection.
 
----
-
----
-
 # 7. Configuring Splunk to Receive Data
 
 Splunk Enterprise was configured to receive data from remote forwarders. A receiving port was enabled to allow incoming log data from the Splunk Universal Forwarder.
@@ -172,8 +153,6 @@ Splunk Enterprise was configured to receive data from remote forwarders. A recei
 - Configured the receiving port to listen on **TCP 9997**.
 - Verified the receiving service was active and ready to accept incoming events.
 - Prepared Splunk Enterprise for centralized log collection.
-
----
 
 # 8. Creating the Linux Host Index
 
@@ -190,8 +169,6 @@ A dedicated index named **linux_host** was created to store Linux system logs se
 - Verified the index was available and actively receiving events.
 - Improved log organization and search efficiency.
 
----
-
 # 9. Configuring the Universal Forwarder
 
 The Splunk Universal Forwarder was configured to send Linux system logs to the Splunk Enterprise server. The forward server was verified, and the Linux syslog file was successfully configured for monitoring.
@@ -206,8 +183,6 @@ The Splunk Universal Forwarder was configured to send Linux system logs to the S
 - Verified the forward server configuration was already present.
 - Confirmed the Linux **/var/log/syslog** file was already configured for monitoring.
 - Verified the forwarder configuration was successfully applied.
-
----
 
 # 10. Verifying Log Ingestion
 
@@ -224,8 +199,6 @@ A test log was generated using the Linux **logger** utility and searched within 
 - Confirmed end-to-end log forwarding and indexing.
 - Demonstrated successful log ingestion and search functionality.
 
----
-
 ## Deployment Server Configuration
 
 To explore Splunk's centralized management capabilities, I enabled the Deployment Server using the Splunk command-line interface. This feature allows administrators to centrally manage multiple Universal Forwarders and distribute configurations across enterprise environments from a single Splunk instance.
@@ -239,8 +212,6 @@ To explore Splunk's centralized management capabilities, I enabled the Deploymen
 - Successfully enabled the Splunk Deployment Server using the CLI.
 - Verified that the deployment server was activated successfully.
 - Prepared the Splunk instance for centralized forwarder management.
-
----
 
 ## Deployment Server Management Interface
 
@@ -261,19 +232,15 @@ Although this lab environment only provides a Linux virtual machine, Splunk also
 - Recognized that the Windows configuration could not be completed because the lab environment only provides a Linux virtual machine.
 
 
-### Screenshot 1 – Add Data (Monitor)
+### Screenshot 11 – Add Data (Monitor)
 
 This screenshot shows the beginning of the Apache web log ingestion process in Splunk. From the **Add Data** page, I selected the **Monitor** option to continuously collect log data from a local file instead of uploading a static file. This allows Splunk to automatically ingest new log entries as they are generated.
 
----
-
-### Screenshot 2 – Configuring Apache Access Log Monitoring
+### Screenshot – Configuring Apache Access Log Monitoring
 
 This screenshot shows the Apache access log file being configured for continuous monitoring. The file `/var/log/apache2/access.log` was selected and configured using the **Continuously Monitor** option. This ensures that all future web server requests are automatically collected and indexed by Splunk in real time.
 
----
-
-### Screenshot 3 – Apache Web Logs Successfully Ingested
+### Screenshot – Apache Web Logs Successfully Ingested
 
 This screenshot confirms that the Apache access logs were successfully ingested into Splunk. The search query filters the results using the source (`/var/log/apache2/access.log`), host (`coffelyweb`), index (`web`), and sourcetype (`access_combined`). The returned events verify that Splunk is successfully collecting, indexing, and making the Apache web server logs searchable for analysis.
 ## Skills Demonstrated
