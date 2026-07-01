@@ -156,6 +156,89 @@ After installation, the Universal Forwarder status was verified using the Splunk
 
 ---
 
+---
+
+# 7. Configuring Splunk to Receive Data
+
+Splunk Enterprise was configured to receive data from remote forwarders. A receiving port was enabled to allow incoming log data from the Splunk Universal Forwarder.
+
+### Screenshot
+
+![Splunk Receiving Data](splunk_receive_data.png)
+
+### Findings
+
+- Enabled Splunk to receive forwarded log data.
+- Configured the receiving port to listen on **TCP 9997**.
+- Verified the receiving service was active and ready to accept incoming events.
+- Prepared Splunk Enterprise for centralized log collection.
+
+---
+
+# 8. Creating the Linux Host Index
+
+A dedicated index named **linux_host** was created to store Linux system logs separately from the default indexes. Using a dedicated index improves organization and simplifies log searching.
+
+### Screenshot
+
+![Linux Host Index](linux_host_index.png)
+
+### Findings
+
+- Created a dedicated **linux_host** index.
+- Configured the index to store Linux system logs.
+- Verified the index was available and actively receiving events.
+- Improved log organization and search efficiency.
+
+---
+
+# 9. Configuring the Universal Forwarder
+
+The Splunk Universal Forwarder was configured to send Linux system logs to the Splunk Enterprise server. The forward server was verified, and the Linux syslog file was successfully configured for monitoring.
+
+### Screenshot
+
+![Forwarder Configuration](forwarder_configuration.png)
+
+### Findings
+
+- Configured the Universal Forwarder to communicate with Splunk Enterprise.
+- Verified the forward server configuration was already present.
+- Confirmed the Linux **/var/log/syslog** file was already configured for monitoring.
+- Verified the forwarder configuration was successfully applied.
+
+---
+
+# 10. Verifying Log Ingestion
+
+A test log was generated using the Linux **logger** utility and searched within Splunk. Successfully locating the log confirmed that the complete logging pipeline—from the Linux host, through the Universal Forwarder, to Splunk Enterprise—was functioning correctly.
+
+### Screenshot
+
+![Linux Host Log Search](linux_host_log_search.png)
+
+### Findings
+
+- Successfully searched the **linux_host** index.
+- Verified that the test log was received by Splunk.
+- Confirmed end-to-end log forwarding and indexing.
+- Demonstrated successful log ingestion and search functionality.
+
+---
+
+## Skills Demonstrated
+
+- Splunk Enterprise Administration
+- Splunk Universal Forwarder
+- Linux Log Collection
+- Data Ingestion
+- Index Management
+- Forwarder Configuration
+- Centralized Logging
+- Linux System Administration
+- Splunk Search & Reporting
+- SIEM Deployment
+
 ## Skills Demonstrated
 
 - Splunk Universal Forwarder Installation
