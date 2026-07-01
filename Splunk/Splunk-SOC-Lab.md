@@ -311,3 +311,11 @@ This screenshot confirms that the Apache access logs were successfully ingested 
 - Verified access to the Splunk Home interface.
 - Confirmed the installation and configuration were successful.
 - Splunk was ready for log ingestion and analysis.
+
+## Resources
+
+- **TryHackMe:** Splunk – Setting up a SOC Lab
+- https://tryhackme.com/room/splunksettingupasoclab
+
+- **Splunk Enterprise Documentation**
+- https://docs.splunk.com/Documentation/Splunk
