@@ -226,6 +226,40 @@ A test log was generated using the Linux **logger** utility and searched within 
 
 ---
 
+## Deployment Server Configuration
+
+To explore Splunk's centralized management capabilities, I enabled the Deployment Server using the Splunk command-line interface. This feature allows administrators to centrally manage multiple Universal Forwarders and distribute configurations across enterprise environments from a single Splunk instance.
+
+### Screenshot
+
+![Deployment Server Enabled](deployment_server_enabled.png)
+
+### Findings
+
+- Successfully enabled the Splunk Deployment Server using the CLI.
+- Verified that the deployment server was activated successfully.
+- Prepared the Splunk instance for centralized forwarder management.
+
+---
+
+## Deployment Server Management Interface
+
+After enabling the Deployment Server, I accessed the Deployment Server management interface in the Splunk web application.
+
+Although this lab environment only provides a Linux virtual machine, Splunk also supports managing Windows systems through the Deployment Server. In a real-world Windows environment, this is where Windows Universal Forwarders would be assigned to server classes and configured to forward Windows Event Logs to the Splunk server. Because the TryHackMe lab only includes a Linux VM, the Windows configuration steps were provided as a demonstration rather than a hands-on exercise.
+
+### Screenshot
+
+![Deployment Server Management](deployment_server_forwarders.png)
+
+### Findings
+
+- Verified access to the Deployment Server management interface.
+- Confirmed the Splunk instance was ready to manage deployment clients.
+- Learned where Windows Universal Forwarders would be assigned to server classes.
+- Understood how centralized deployment simplifies management of Windows and Linux endpoints.
+- Recognized that the Windows configuration could not be completed because the lab environment only provides a Linux virtual machine.
+
 ## Skills Demonstrated
 
 - Splunk Enterprise Administration
