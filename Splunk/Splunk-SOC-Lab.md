@@ -260,6 +260,22 @@ Although this lab environment only provides a Linux virtual machine, Splunk also
 - Understood how centralized deployment simplifies management of Windows and Linux endpoints.
 - Recognized that the Windows configuration could not be completed because the lab environment only provides a Linux virtual machine.
 
+
+### Screenshot 1 – Add Data (Monitor)
+
+This screenshot shows the beginning of the Apache web log ingestion process in Splunk. From the **Add Data** page, I selected the **Monitor** option to continuously collect log data from a local file instead of uploading a static file. This allows Splunk to automatically ingest new log entries as they are generated.
+
+---
+
+### Screenshot 2 – Configuring Apache Access Log Monitoring
+
+This screenshot shows the Apache access log file being configured for continuous monitoring. The file `/var/log/apache2/access.log` was selected and configured using the **Continuously Monitor** option. This ensures that all future web server requests are automatically collected and indexed by Splunk in real time.
+
+---
+
+### Screenshot 3 – Apache Web Logs Successfully Ingested
+
+This screenshot confirms that the Apache access logs were successfully ingested into Splunk. The search query filters the results using the source (`/var/log/apache2/access.log`), host (`coffelyweb`), index (`web`), and sourcetype (`access_combined`). The returned events verify that Splunk is successfully collecting, indexing, and making the Apache web server logs searchable for analysis.
 ## Skills Demonstrated
 
 - Splunk Enterprise Administration
