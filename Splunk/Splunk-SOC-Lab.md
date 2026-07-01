@@ -119,6 +119,52 @@ The `splunk help` command was used to display the available command-line options
 
 ![Splunk CLI Help](splunk_help.png)
 
+---
+
+# 5. Splunk Universal Forwarder Installation
+
+The Splunk Universal Forwarder was installed on the same Ubuntu system as the Splunk Enterprise instance. During startup, a management port conflict was detected because Splunk Enterprise was already using port **8089**. The forwarder was successfully configured to use **port 8090**, allowing both services to run simultaneously.
+
+### Screenshot
+
+![Splunk Universal Forwarder Installation](splunk_forwarder_install.png)
+
+### Findings
+
+- Installed the Splunk Universal Forwarder on Ubuntu Linux.
+- Identified a management port conflict on port **8089**.
+- Reconfigured the forwarder to use management port **8090**.
+- Successfully started the Universal Forwarder without errors.
+- Verified the installation completed successfully.
+
+---
+
+# 6. Splunk Universal Forwarder Status
+
+After installation, the Universal Forwarder status was verified using the Splunk CLI. The output confirmed that the **splunkd** service and all helper processes were running correctly.
+
+### Screenshot
+
+![Splunk Universal Forwarder Status](splunk_forwarder_status.png)
+
+### Findings
+
+- Verified the Universal Forwarder service was running.
+- Confirmed **splunkd** was active.
+- Verified all helper processes were running successfully.
+- Confirmed the forwarder was ready for data forwarding and log collection.
+
+---
+
+## Skills Demonstrated
+
+- Splunk Universal Forwarder Installation
+- Linux Administration
+- Command Line (CLI)
+- Splunk Service Management
+- Port Conflict Resolution
+- Log Collection Preparation
+
 ### Findings
 
 - Displayed the available Splunk CLI commands.
