@@ -166,3 +166,19 @@ index=web_logs
 Finally, I completed the dashboard by combining multiple visualizations into a single interface. The dashboard now includes the hourly activity chart, URI distribution pie chart, HTTP status summary table, and Source IP statistics table, providing an organized overview of web server activity for monitoring and investigation.
 
 ![Completed Web Logs Dashboard](completed_web_logs_dashboard.png)
+
+---
+
+## Conclusion
+
+This lab provided hands-on experience using Splunk to analyze and visualize security-related log data. I created reports to summarize VPN authentication activity, built detection queries to identify suspicious web requests, established a baseline for normal HTTP 404 responses, and applied threshold-based searches to detect abnormal behavior. I also designed dashboards using pie charts and statistics tables to present web server activity in a clear, easy-to-read format. These exercises strengthened my understanding of Splunk Search Processing Language (SPL), log analysis, dashboard creation, and security monitoring techniques commonly used by Security Operations Center (SOC) analysts.
+
+---
+
+## References
+
+1. TryHackMe. *Splunk: Dashboards and Reports*. https://tryhackme.com
+
+2. Splunk Inc. *Splunk Enterprise Documentation*. https://docs.splunk.com/Documentation/Splunk
+
+3. Splunk Inc. *Search Processing Language (SPL) Search Reference*. https://docs.splunk.com/Documentation/Splunk/latest/SearchReference/Aboutthesearchlanguage
