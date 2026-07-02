@@ -75,7 +75,7 @@ To identify potential unauthorized access, I searched for requests to `/restrict
 index=web_logs URI=/restricted.html NOT Source_IP IN (10.0.0.0/8,172.16.0.0/12,192.168.0.0/16)
 ```
 
-![Restricted Page Search](initial_data_overview.png)
+![Restricted Page Search](restricted_page_alert_search.png)
 
 ---
 
