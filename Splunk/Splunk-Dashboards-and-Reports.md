@@ -123,6 +123,46 @@ index=web_logs URI=/payments.html status_code=404
 
 ---
 
-## Summary
+---
 
-This lab demonstrated how Splunk reports and threshold-based searches can improve security monitoring. By creating reusable reports, establishing activity baselines, and identifying abnormal spikes in HTTP errors, analysts can detect suspicious behavior more efficiently and reduce manual investigation time.
+## Screenshot 9 – Dashboard Edit Mode
+
+Next, I opened the **Web Logs Overview** dashboard and entered **Edit** mode to begin building additional visualizations. Dashboards provide a centralized view of important security information, allowing analysts to quickly monitor activity and identify trends across web server logs.
+
+![Dashboard Edit Mode](web_logs_dashboard.png)
+
+---
+
+## Screenshot 10 – URI Event Distribution
+
+I added a **Pie Chart** panel that displays the distribution of requests by URI. This visualization provides a quick overview of which web pages receive the most traffic and helps identify the most frequently accessed resources.
+
+```spl
+index=web_logs
+| stats count by URI
+| sort - count
+```
+
+![URI Event Distribution](uri_pie_chart.png)
+
+---
+
+## Screenshot 11 – Source IP Statistics Table
+
+I then created another **Statistics Table** displaying the **Source_IP**, **URI**, and **status_code** fields. This view helps identify which source IP addresses accessed specific web pages and the HTTP response codes they received, making it useful for investigating suspicious activity and validating web server behavior.
+
+```spl
+index=web_logs
+| stats count by Source_IP URI status_code
+| sort - count
+```
+
+![Source IP Statistics Table](source_ip_statistics_table.png)
+
+---
+
+## Screenshot 12 – Completed Web Logs Dashboard
+
+Finally, I completed the dashboard by combining multiple visualizations into a single interface. The dashboard now includes the hourly activity chart, URI distribution pie chart, HTTP status summary table, and Source IP statistics table, providing an organized overview of web server activity for monitoring and investigation.
+
+![Completed Web Logs Dashboard](completed_web_logs_dashboard.png)
