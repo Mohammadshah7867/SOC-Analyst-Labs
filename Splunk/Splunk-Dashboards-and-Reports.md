@@ -4,8 +4,6 @@
 
 This lab demonstrates how Splunk reports can be used to summarize large datasets, identify authentication trends, establish security baselines, and detect abnormal activity using threshold-based searches.
 
----
-
 ## Skills Demonstrated
 
 - Creating Splunk reports
@@ -18,22 +16,16 @@ This lab demonstrates how Splunk reports can be used to summarize large datasets
 - Monitoring HTTP status codes
 - Writing SOC detection queries
 
----
-
 ## Tools Used
 
 - Splunk Enterprise
 - TryHackMe – Splunk Dashboards & Reports
-
----
 
 ## Screenshot 1 – Initial Data Overview
 
 To begin the lab, I searched all indexed data using `index=*`, set the time range to **All time**, and reviewed the available events before beginning report creation.
 
 ![Initial Data Overview](initial_data_overview.png)
-
----
 
 ## Screenshot 2 – VPN Username Report Query
 
@@ -47,23 +39,17 @@ index=vpn_server
 
 ![VPN Username Report Query](vpn_username_report_query.png)
 
----
-
 ## Screenshot 3 – Creating the Report
 
 The VPN username query was saved as a report named **VPN Logins by Usernames**. This allows analysts to quickly reuse the search without recreating it.
 
 ![Creating Report](create_report.png)
 
----
-
 ## Screenshot 4 – Completed VPN Report
 
 The completed report displays VPN login counts for every username. Reports provide an efficient way for SOC analysts to review authentication activity and identify unusual login patterns.
 
 ![VPN Username Report](vpn_username_report.png)
-
----
 
 # Alerting and Detection
 
@@ -77,8 +63,6 @@ index=web_logs URI=/restricted.html NOT Source_IP IN (10.0.0.0/8,172.16.0.0/12,1
 
 ![Restricted Page Search](restricted_page_alert_search.png)
 
----
-
 ## Screenshot 6 – Reviewing HTTP Status Codes
 
 Next, I reviewed the HTTP status codes returned by `/payments.html`. Understanding the normal distribution of response codes helps establish a baseline before creating detection rules.
@@ -88,8 +72,6 @@ index=web_logs URI=/payments.html
 ```
 
 ![Payments Status Codes](payments_status_codes.png)
-
----
 
 ## Screenshot 7 – Establishing a Baseline
 
@@ -105,8 +87,6 @@ index=web_logs URI=/payments.html status_code=404
 
 ![404 Baseline](payments_404_baseline.png)
 
----
-
 ## Screenshot 8 – Threshold Detection
 
 Finally, I created a threshold-based detection rule that identifies hours where HTTP 404 responses exceed the normal baseline. Any hour with more than 11 responses is flagged for investigation.
@@ -121,17 +101,11 @@ index=web_logs URI=/payments.html status_code=404
 
 ![404 Threshold Detection](payments_404_threshold.png)
 
----
-
----
-
 ## Screenshot 9 – Dashboard Edit Mode
 
 Next, I opened the **Web Logs Overview** dashboard and entered **Edit** mode to begin building additional visualizations. Dashboards provide a centralized view of important security information, allowing analysts to quickly monitor activity and identify trends across web server logs.
 
 ![Dashboard Edit Mode](web_logs_dashboard.png)
-
----
 
 ## Screenshot 10 – URI Event Distribution
 
@@ -145,8 +119,6 @@ index=web_logs
 
 ![URI Event Distribution](uri_pie_chart.png)
 
----
-
 ## Screenshot 11 – Source IP Statistics Table
 
 I then created another **Statistics Table** displaying the **Source_IP**, **URI**, and **status_code** fields. This view helps identify which source IP addresses accessed specific web pages and the HTTP response codes they received, making it useful for investigating suspicious activity and validating web server behavior.
@@ -159,21 +131,15 @@ index=web_logs
 
 ![Source IP Statistics Table](source_ip_statistics_table.png)
 
----
-
 ## Screenshot 12 – Completed Web Logs Dashboard
 
 Finally, I completed the dashboard by combining multiple visualizations into a single interface. The dashboard now includes the hourly activity chart, URI distribution pie chart, HTTP status summary table, and Source IP statistics table, providing an organized overview of web server activity for monitoring and investigation.
 
 ![Completed Web Logs Dashboard](completed_web_logs_dashboard.png)
 
----
-
 ## Conclusion
 
 This lab provided hands-on experience using Splunk to analyze and visualize security-related log data. I created reports to summarize VPN authentication activity, built detection queries to identify suspicious web requests, established a baseline for normal HTTP 404 responses, and applied threshold-based searches to detect abnormal behavior. I also designed dashboards using pie charts and statistics tables to present web server activity in a clear, easy-to-read format. These exercises strengthened my understanding of Splunk Search Processing Language (SPL), log analysis, dashboard creation, and security monitoring techniques commonly used by Security Operations Center (SOC) analysts.
-
----
 
 ## References
 
