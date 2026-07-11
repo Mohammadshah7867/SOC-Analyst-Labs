@@ -70,3 +70,29 @@ A complete forensic report was created documenting the examination methodology, 
 - Windows
 - Digital Forensics
 - Incident Response
+
+  ## Technologies
+
+- FTK Imager
+- Autopsy
+- Windows
+- Digital Forensics
+- Incident Response
+
+---
+
+## Technologies
+
+- FTK Imager
+- Autopsy
+- Windows
+- Digital Forensics
+- Incident Response
+
+---
+
+## 📄 Full Report
+
+The complete forensic examination report is available below.
+
+➡️ **[Forensic Investigation Report](Forensic_Report.pdf)**
