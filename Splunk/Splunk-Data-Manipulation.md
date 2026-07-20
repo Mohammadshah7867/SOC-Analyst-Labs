@@ -2,7 +2,7 @@
 
 ## Objective
 
-This lab focuses on how Splunk ingests, parses, and normalizes machine data. It covers building a custom Splunk application, configuring scripted data inputs, and correcting event boundary issues using regular expressions and configuration files. These skills are foundational for correctly structuring raw data so it can be searched, correlated, and used to build accurate detections.
+This lab focuses on how Splunk ingests, parses, and normalizes machine data. It covers building a custom Splunk application, configuring multiple scripted data inputs, and correcting event boundary issues — both events that are incorrectly merged together and events that are incorrectly split apart — using regular expressions and Splunk's configuration files. These skills are foundational for correctly structuring raw data so it can be searched, correlated, and used to build accurate detections.
 
 ## Skills Demonstrated
 
@@ -11,16 +11,16 @@ This lab focuses on how Splunk ingests, parses, and normalizes machine data. It 
 - Creating a custom Splunk application
 - Writing and testing custom scripted data inputs
 - Configuring `inputs.conf` for multiple data sources
-- Diagnosing incorrect event boundary parsing
+- Diagnosing incorrect event boundary parsing (both over-merging and over-splitting)
 - Building and validating regular expressions with regex101
-- Configuring `props.conf` to control event breaking (`SHOULD_LINEMERGE`, `MUST_BREAK_AFTER`)
+- Configuring `props.conf` to control event breaking (`SHOULD_LINEMERGE`, `MUST_BREAK_AFTER`, `BREAK_ONLY_BEFORE`)
 - Restarting Splunk services to apply configuration changes
 - Verifying log ingestion and parsing accuracy through SPL search
 
 ## Tools Used
 
 - Splunk Enterprise
-- Python 3 (custom scripted input)
+- Python 3 (custom scripted inputs)
 - regex101.com (regex testing)
 - Splunk configuration files: `inputs.conf`, `props.conf`, `transforms.conf`, `fields.conf`
 - TryHackMe – Splunk: Data Manipulation
@@ -169,18 +169,73 @@ index=main sourcetype=vpn_logs
 
 ![VPN Logs Search Overview](vpn_logs_search_overview.png)
 
+# Parsing Multi-Line Events
+
+## Screenshot 14 – Testing the Authentication Log Script
+
+I copied the `authentication_logs` executable into the app's `bin` directory and ran it directly to review its output format. Unlike the VPN logs, each authentication event spans multiple lines, including the authentication type, affected machine, timestamp, department, and a risk assessment of the login attempt.
+
+```bash
+cp /home/ubuntu/Downloads/scripts/authentication_logs /opt/splunk/etc/apps/DataApp/bin/
+cd /opt/splunk/etc/apps/DataApp/bin
+./authentication_logs
+```
+
+![Authentication Logs Script Test](auth_logs_script_test.png)
+
+## Screenshot 15 – Configuring the Authentication Log Input
+
+I added a third stanza to `inputs.conf`, instructing Splunk to run the `authentication_logs` script every five seconds and ingest its output into the `main` index under a dedicated sourcetype and host.
+
+```ini
+[script:///opt/splunk/etc/apps/DataApp/bin/authentication_logs]
+index = main
+sourcetype = auth_logs
+host = auth_server
+interval = 5
+```
+
+![DataApp inputs.conf with Authentication Stanza](dataapp_inputs_conf_auth.png)
+
+## Screenshot 16 – Fixing Multi-Line Event Boundaries
+
+After restarting Splunk, the initial search of `index=main sourcetype=auth_logs` showed the opposite problem from the VPN logs — Splunk was splitting each multi-line authentication event into two separate events, since it couldn't determine that the log entry continued onto a second line. To fix this, I added a new stanza to `props.conf` that tells Splunk to merge lines together and only break into a new event when it encounters the `[Authentication]` marker.
+
+```ini
+[auth_logs]
+SHOULD_LINEMERGE = true
+BREAK_ONLY_BEFORE = \[Authentication\]
+```
+
+```bash
+/opt/splunk/bin/splunk restart
+```
+
+![DataApp props.conf with Authentication Stanza](dataapp_props_conf_auth.png)
+
+## Screenshot 17 – Verifying Correct Event Boundaries
+
+By the time I captured this screenshot, the `props.conf` fix had already been applied, so the search results reflect the corrected behavior rather than the original split-event issue. Running `index=main sourcetype=auth_logs` with the time range set to **All time (real time)** confirmed 192 correctly parsed events, with each authentication attempt combined into a single event containing both the `[Authentication]:` line and the corresponding `at:` timestamp line.
+
+```spl
+index=main sourcetype=auth_logs
+```
+
+![Authentication Logs Fixed Boundaries](auth_logs_fixed_boundaries.png)
+
 ## Findings
 
-- Splunk does not automatically know how to break raw script output into individual events — without explicit configuration, it defaults to merging multiple lines into a single event.
+- Splunk does not automatically know how to break raw script output into individual events — without explicit configuration, it defaults to merging multiple lines into a single event, which can go too far (merging unrelated events) or not far enough (splitting a single multi-line event apart).
 - Configuration file precedence matters: settings in an app's `local` directory override `default`, and a scripted input's success depends on `inputs.conf` correctly referencing the executable's path.
 - Validating a regex pattern externally (regex101) before deploying it in `props.conf` is a fast way to avoid misconfigured event breaking in production.
+- `props.conf` offers different tools depending on the direction of the problem: `MUST_BREAK_AFTER` for splitting over-merged single-line logs, and `SHOULD_LINEMERGE` combined with `BREAK_ONLY_BEFORE` for correctly joining multi-line logs that Splunk has split apart.
 
 ## Lessons Learned
 
 - Configuration files must be placed in the correct directory relative to the app (`local/` inside the app folder, not an absolute `/local` path) — an easy mistake to make when troubleshooting under time pressure.
 - File naming precision matters in Splunk — a typo like `input.conf` instead of `inputs.conf` will cause the config to silently fail to load, with no obvious error.
 - Restarting Splunk is required for both `inputs.conf` and `props.conf` changes to take effect.
-- `SHOULD_LINEMERGE = false` combined with `MUST_BREAK_AFTER` is a reliable pattern for handling single-line, delimiter-terminated logs.
+- `SHOULD_LINEMERGE = false` combined with `MUST_BREAK_AFTER` is a reliable pattern for handling single-line, delimiter-terminated logs, while `SHOULD_LINEMERGE = true` combined with `BREAK_ONLY_BEFORE` correctly handles multi-line logs that share a consistent starting marker.
 
 ## References
 
