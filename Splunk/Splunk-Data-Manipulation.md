@@ -2,7 +2,7 @@
 
 ## Objective
 
-This lab focuses on how Splunk ingests, parses, and normalizes machine data. It covers building a custom Splunk application, configuring multiple scripted data inputs, correcting event boundary issues — both events that are incorrectly merged together and events that are incorrectly split apart — and masking sensitive data using Splunk's configuration files. These skills are foundational for correctly structuring raw data so it can be searched, correlated, and used to build accurate detections while maintaining data protection standards.
+This lab focuses on how Splunk ingests, parses, and normalizes machine data. It covers building a custom Splunk application, configuring multiple scripted data inputs, correcting event boundary issues, masking sensitive data, and extracting custom fields using Splunk's configuration files. Together, these skills form the foundation for correctly structuring raw data so it can be searched, correlated, and used to build accurate detections while maintaining data protection standards.
 
 ## Skills Demonstrated
 
@@ -15,9 +15,12 @@ This lab focuses on how Splunk ingests, parses, and normalizes machine data. It 
 - Building and validating regular expressions with regex101
 - Configuring `props.conf` to control event breaking (`SHOULD_LINEMERGE`, `MUST_BREAK_AFTER`, `BREAK_ONLY_BEFORE`)
 - Masking sensitive data using `SEDCMD` and `sed`-style regex substitution
+- Extracting custom fields using `transforms.conf` and `REGEX`/`FORMAT` stanzas
+- Applying `TRANSFORM-` references in `props.conf` to link extractions to sourcetypes
+- Configuring `fields.conf` to mark extracted fields as indexed and searchable
 - Applying data protection practices aligned with standards like PCI DSS and HIPAA
 - Restarting Splunk services to apply configuration changes
-- Verifying log ingestion and parsing accuracy through SPL search
+- Verifying log ingestion, parsing, and field extraction accuracy through SPL search
 
 ## Tools Used
 
@@ -311,21 +314,140 @@ index=main sourcetype=purchase_logs
 
 ![Purchase Logs Masked Results](purchase_logs_masked_results.png)
 
+# Extracting Custom Fields
+
+## Screenshot 25 – Testing the Field Extraction Regex
+
+To extract structured fields from the VPN logs, I first tested a regex pattern against sample log data using regex101. The pattern `User:\s(.+?),\sServer:\s(.+?),\sAction:\s(\w+)` uses three capturing groups to isolate the **User**, **Server**, and **Action** values from each event.
+
+![VPN Logs Field Extraction Regex101 Test](vpn_logs_field_extraction_regex101.png)
+
+## Screenshot 26 – Configuring transforms.conf
+
+I created a `transforms.conf` file in the app's `local` directory and added a named field extraction stanza, referencing the validated regex pattern and defining the format Splunk should use to name the extracted fields.
+
+```ini
+[vpn_custom_fields]
+REGEX = User:\s(.+?),\sServer:\s(.+?),\sAction:\s(\w+)
+FORMAT = User::$1 Server::$2 Action::$3
+WRITE_META = true
+```
+
+![DataApp transforms.conf](dataapp_transforms_conf.png)
+
+## Screenshot 27 – Linking the Transform in props.conf
+
+I updated the `[vpn_logs]` stanza in `props.conf` to reference the new field extraction by name, using a `TRANSFORM-` setting.
+
+```ini
+[vpn_logs]
+SHOULD_LINEMERGE = false
+MUST_BREAK_AFTER = (CONNECT|DISCONNECT)
+TRANSFORM-vpn = vpn_custom_fields
+```
+
+![DataApp props.conf with Transform Reference](dataapp_props_conf_transform.png)
+
+## Screenshot 28 – Configuring fields.conf
+
+I created a `fields.conf` file to mark the three newly extracted fields — `User`, `Server`, and `Action` — as indexed, ensuring they are recognized and searchable within Splunk.
+
+```ini
+[User]
+INDEXED = true
+
+[Server]
+INDEXED = true
+
+[Action]
+INDEXED = true
+```
+
+```bash
+/opt/splunk/bin/splunk restart
+```
+
+![DataApp fields.conf](dataapp_fields_conf.png)
+
+## Screenshot 29 – Verifying VPN Log Field Extraction
+
+After restarting Splunk, I re-ran `index=main sourcetype=vpn_logs` and confirmed that `User`, `Server`, and `Action` now appear as extracted, searchable fields in the sidebar, with each event broken out into its individual components.
+
+```spl
+index=main sourcetype=vpn_logs
+```
+
+![VPN Logs Custom Fields Verified](vpn_logs_custom_fields_verified.png)
+
+## Screenshot 30 – Extracting Fields from Purchase Logs
+
+Applying the same technique to the purchase logs, I added a second stanza to `transforms.conf` to extract the `User` and `CC_Number` fields from each masked purchase event.
+
+```ini
+[purchase_custom_fields]
+REGEX = ^User\s+([A-Za-z]+(?:\s+[A-Za-z]+)*?)\s+made a purchase with credit card\s+([0-9]{4}(?:-XXXX){3}|(?:\d{4}[\s-]?){3}\d{4})\.
+FORMAT = User::$1 CC_Number::$2
+WRITE_META = true
+```
+
+![DataApp transforms.conf - Full](dataapp_transforms_conf_full.png)
+
+## Screenshot 31 – Linking the Purchase Transform
+
+I updated the `[purchase_logs]` stanza in `props.conf` to reference the new extraction, adding it alongside the existing event-breaking and masking rules.
+
+```ini
+[purchase_logs]
+SHOULD_LINEMERGE = true
+MUST_BREAK_AFTER = \d{4}\.
+SEDCMD-cc = s/-\d{4}-\d{4}-\d{4}/-XXXX-XXXX-XXXX/g
+TRANSFORM-purchase = purchase_custom_fields
+```
+
+![DataApp props.conf with Purchase Transform](dataapp_props_conf_purchase_transform.png)
+
+## Screenshot 32 – Indexing the New Fields
+
+I added a `CC_Number` stanza to `fields.conf` to mark the newly extracted masked credit card field as indexed and searchable.
+
+```ini
+[CC_Number]
+INDEXED = true
+```
+
+```bash
+/opt/splunk/bin/splunk restart
+```
+
+![DataApp fields.conf - Full](dataapp_fields_conf_full.png)
+
+## Screenshot 33 – Verifying Purchase Log Field Extraction
+
+After restarting Splunk, I ran the final verification search `index=main sourcetype=purchase_logs` with the time range set to **All time (real time)**. The field sidebar confirmed successful extraction, showing **14 unique User field values** and **10 unique masked CC_Number field values** across 3,200 purchase events.
+
+```spl
+index=main sourcetype=purchase_logs
+```
+
+![Purchase Logs Custom Fields Verified](purchase_logs_custom_fields_verified.png)
+
 ## Findings
 
 - Splunk does not automatically know how to break raw script output into individual events — without explicit configuration, it defaults to merging multiple lines into a single event, which can go too far (merging unrelated events) or not far enough (splitting a single multi-line event apart).
 - Configuration file precedence matters: settings in an app's `local` directory override `default`, and a scripted input's success depends on `inputs.conf` correctly referencing the executable's path.
-- Validating a regex pattern externally (regex101) before deploying it in `props.conf` is a fast way to avoid misconfigured event breaking in production.
+- Validating a regex pattern externally (regex101) before deploying it in `transforms.conf` or `props.conf` is a fast way to avoid misconfigured event breaking or field extraction in production.
 - `props.conf` offers different tools depending on the direction of the problem: `MUST_BREAK_AFTER` for splitting over-merged single-line logs, and `SHOULD_LINEMERGE` combined with `BREAK_ONLY_BEFORE` for correctly joining multi-line logs that Splunk has split apart.
 - Sensitive data such as credit card numbers must be masked at index time using `SEDCMD`, rather than relying on search-time filtering, to ensure the raw sensitive values are never stored or displayed unmasked.
+- Custom field extraction requires three coordinated configuration files working together: `transforms.conf` defines the extraction logic, `props.conf` links it to a sourcetype, and `fields.conf` ensures the extracted values are indexed and searchable.
 
 ## Lessons Learned
 
 - Configuration files must be placed in the correct directory relative to the app (`local/` inside the app folder, not an absolute `/local` path) — an easy mistake to make when troubleshooting under time pressure.
-- File naming precision matters in Splunk — a typo like `input.conf` instead of `inputs.conf` will cause the config to silently fail to load, with no obvious error.
-- Restarting Splunk is required for `inputs.conf` and `props.conf` changes to take effect.
+- File naming precision matters in Splunk — a typo like `input.conf` instead of `inputs.conf`, or `tranforms.conf` instead of `transforms.conf`, will cause the config to silently fail to load or create a stray unused file, with no obvious error.
+- Restarting Splunk is required for `inputs.conf`, `props.conf`, `transforms.conf`, and `fields.conf` changes to take effect.
 - `SHOULD_LINEMERGE = false` combined with `MUST_BREAK_AFTER` is a reliable pattern for handling single-line, delimiter-terminated logs, while `SHOULD_LINEMERGE = true` combined with `BREAK_ONLY_BEFORE` correctly handles multi-line logs that share a consistent starting marker.
 - `SEDCMD` provides a straightforward way to mask sensitive data at index time using familiar `sed` substitution syntax, without needing to modify the source data itself.
+- When adding a new field extraction, it's easy to forget the stanza name and `FORMAT` line in `transforms.conf` — a regex alone is not enough; Splunk needs to know what to name each captured group.
 
 ## References
 
