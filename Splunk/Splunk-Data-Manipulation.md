@@ -2,7 +2,7 @@
 
 ## Objective
 
-This lab focuses on how Splunk ingests, parses, and normalizes machine data. It covers building a custom Splunk application, configuring multiple scripted data inputs, and correcting event boundary issues — both events that are incorrectly merged together and events that are incorrectly split apart — using regular expressions and Splunk's configuration files. These skills are foundational for correctly structuring raw data so it can be searched, correlated, and used to build accurate detections.
+This lab focuses on how Splunk ingests, parses, and normalizes machine data. It covers building a custom Splunk application, configuring multiple scripted data inputs, correcting event boundary issues — both events that are incorrectly merged together and events that are incorrectly split apart — and masking sensitive data using Splunk's configuration files. These skills are foundational for correctly structuring raw data so it can be searched, correlated, and used to build accurate detections while maintaining data protection standards.
 
 ## Skills Demonstrated
 
@@ -14,6 +14,8 @@ This lab focuses on how Splunk ingests, parses, and normalizes machine data. It 
 - Diagnosing incorrect event boundary parsing (both over-merging and over-splitting)
 - Building and validating regular expressions with regex101
 - Configuring `props.conf` to control event breaking (`SHOULD_LINEMERGE`, `MUST_BREAK_AFTER`, `BREAK_ONLY_BEFORE`)
+- Masking sensitive data using `SEDCMD` and `sed`-style regex substitution
+- Applying data protection practices aligned with standards like PCI DSS and HIPAA
 - Restarting Splunk services to apply configuration changes
 - Verifying log ingestion and parsing accuracy through SPL search
 
@@ -223,19 +225,107 @@ index=main sourcetype=auth_logs
 
 ![Authentication Logs Fixed Boundaries](auth_logs_fixed_boundaries.png)
 
+# Masking Sensitive Data
+
+## Screenshot 18 – Testing the Purchase Log Script
+
+I copied the `purchase-details` executable into the app's `bin` directory and ran it directly to review the log format. Each event tracks a user and the full, unmasked credit card number used in a purchase — sensitive data that will need to be protected before indexing.
+
+```bash
+cp /home/ubuntu/Downloads/scripts/purchase-details /opt/splunk/etc/apps/DataApp/bin/
+/opt/splunk/etc/apps/DataApp/bin/purchase-details
+```
+
+![Purchase Logs Script Test](purchase_logs_script_test.png)
+
+## Screenshot 19 – Configuring the Purchase Log Input
+
+I added a fourth stanza to `inputs.conf`, instructing Splunk to run the `purchase-details` script every five seconds and ingest its output into the `main` index under a dedicated sourcetype and host.
+
+```ini
+[script:///opt/splunk/etc/apps/DataApp/bin/purchase-details]
+index = main
+sourcetype = purchase_logs
+host = order_server
+interval = 5
+```
+
+![DataApp inputs.conf with Purchase Stanza](dataapp_inputs_conf_purchase.png)
+
+## Screenshot 20 – Testing the Event-Breaking Regex
+
+Since each purchase log ends with the last four digits of the credit card number followed by a period, I tested the pattern `\d{4}\.` against sample log data using regex101 to confirm it reliably matched the end of every event before implementing it in Splunk.
+
+![Regex101 Purchase Log Boundary Test](purchase_logs_regex101_test.png)
+
+## Screenshot 21 – Configuring Event Boundaries
+
+With the regex validated, I added a `purchase_logs` stanza to `props.conf`, instructing Splunk to merge lines together and break into a new event only after matching four digits followed by a period.
+
+```ini
+[purchase_logs]
+SHOULD_LINEMERGE = true
+MUST_BREAK_AFTER = \d{4}\.
+```
+
+```bash
+/opt/splunk/bin/splunk restart
+```
+
+![DataApp props.conf with Purchase Stanza](dataapp_props_conf_purchase.png)
+
+## Screenshot 22 – Verifying Ingestion and Identifying Exposed Data
+
+After restarting Splunk, I searched `index=main sourcetype=purchase_logs` with the time range set to **All time (real time)**. The event boundaries were correctly parsed, confirming 665 individual purchase events. However, this also revealed a data exposure issue: full, unmasked credit card numbers were visible in every event.
+
+```spl
+index=main sourcetype=purchase_logs
+```
+
+![Purchase Logs Search Overview - Unmasked](purchase_logs_search_overview.png)
+
+## Screenshot 23 – Masking Sensitive Credit Card Data
+
+To remediate the exposure, I added a `SEDCMD` rule to the `purchase_logs` stanza in `props.conf`. This setting uses `sed`-style regex substitution to replace the last three groups of four digits in each credit card number with `XXXX`, leaving only the first four digits visible.
+
+```ini
+[purchase_logs]
+SHOULD_LINEMERGE = true
+MUST_BREAK_AFTER = \d{4}\.
+SEDCMD-cc = s/-\d{4}-\d{4}-\d{4}/-XXXX-XXXX-XXXX/g
+```
+
+```bash
+/opt/splunk/bin/splunk restart
+```
+
+![DataApp props.conf with Masking Rule](dataapp_props_conf_masking.png)
+
+## Screenshot 24 – Verifying Masked Data
+
+After restarting Splunk, I re-ran the search `index=main sourcetype=purchase_logs`. Credit card numbers are now correctly masked in every event (e.g., `3530-XXXX-XXXX-XXXX`), satisfying data protection requirements similar to PCI DSS while preserving the log's utility for investigation.
+
+```spl
+index=main sourcetype=purchase_logs
+```
+
+![Purchase Logs Masked Results](purchase_logs_masked_results.png)
+
 ## Findings
 
 - Splunk does not automatically know how to break raw script output into individual events — without explicit configuration, it defaults to merging multiple lines into a single event, which can go too far (merging unrelated events) or not far enough (splitting a single multi-line event apart).
 - Configuration file precedence matters: settings in an app's `local` directory override `default`, and a scripted input's success depends on `inputs.conf` correctly referencing the executable's path.
 - Validating a regex pattern externally (regex101) before deploying it in `props.conf` is a fast way to avoid misconfigured event breaking in production.
 - `props.conf` offers different tools depending on the direction of the problem: `MUST_BREAK_AFTER` for splitting over-merged single-line logs, and `SHOULD_LINEMERGE` combined with `BREAK_ONLY_BEFORE` for correctly joining multi-line logs that Splunk has split apart.
+- Sensitive data such as credit card numbers must be masked at index time using `SEDCMD`, rather than relying on search-time filtering, to ensure the raw sensitive values are never stored or displayed unmasked.
 
 ## Lessons Learned
 
 - Configuration files must be placed in the correct directory relative to the app (`local/` inside the app folder, not an absolute `/local` path) — an easy mistake to make when troubleshooting under time pressure.
 - File naming precision matters in Splunk — a typo like `input.conf` instead of `inputs.conf` will cause the config to silently fail to load, with no obvious error.
-- Restarting Splunk is required for both `inputs.conf` and `props.conf` changes to take effect.
+- Restarting Splunk is required for `inputs.conf` and `props.conf` changes to take effect.
 - `SHOULD_LINEMERGE = false` combined with `MUST_BREAK_AFTER` is a reliable pattern for handling single-line, delimiter-terminated logs, while `SHOULD_LINEMERGE = true` combined with `BREAK_ONLY_BEFORE` correctly handles multi-line logs that share a consistent starting marker.
+- `SEDCMD` provides a straightforward way to mask sensitive data at index time using familiar `sed` substitution syntax, without needing to modify the source data itself.
 
 ## References
 
