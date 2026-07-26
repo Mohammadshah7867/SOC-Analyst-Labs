@@ -1,65 +1,103 @@
-# Core Windows Processes
+# Windows Event Logs
 
 ## Objective
-
-This lab covers the core Windows processes that run on every Windows system at boot and during normal operation. Understanding the "normal" behavior of these processes — their expected parent-child relationships, file paths, and running accounts — is foundational to endpoint security monitoring, since it enables an analyst to quickly spot outliers, such as malware masquerading as a legitimate system process.
+This lab covers Windows Event Logs and the tools available to query them, from the GUI-based Event Viewer to command-line utilities like `wevtutil.exe` and the PowerShell cmdlet `Get-WinEvent`. Manually sifting through hundreds or thousands of events in Event Viewer isn't practical for real SOC work — being able to script and filter event log queries from the command line is a core skill for efficient log analysis and triage.
 
 ## Skills Demonstrated
-
-- Identifying core Windows processes and their function in the OS boot sequence
-- Analyzing parent-child process relationships using Task Manager and Process Explorer
-- Distinguishing normal vs. unusual process behavior for common masquerading targets
-- Understanding process masquerading techniques (misspelled process names, unexpected parents, abnormal file paths)
-- Using Process Hacker to inspect service-hosting relationships within svchost.exe
+- Navigating Event Viewer to inspect log properties and individual event details
+- Querying event logs from the command line using `wevtutil.exe`
+- Understanding `wevtutil` options for read direction, count, format, and log file paths
+- Querying and filtering event logs using the PowerShell `Get-WinEvent` cmdlet
+- Filtering events using `-FilterHashtable` and `-FilterXPath` for efficient, scriptable log queries
+- Enumerating event log providers and identifying logs associated with specific applications/services
 
 ## Tools Used
+- Windows Event Viewer
+- wevtutil.exe
+- PowerShell (Get-WinEvent)
+- TryHackMe – Windows Event Logs
 
-- Windows Task Manager
-- Process Explorer
-- Process Hacker
-- TryHackMe – Core Windows Processes
+## Screenshot 1 – Event Viewer Overview
+I opened Event Viewer and reviewed the default layout, including the log categories (Application, Security, Setup, System, Forwarded Events) and the custom Applications and Services Logs section.
+![Event Viewer Overview](eventviewer_overview.png)
 
-## Screenshot 1 – Core Windows Processes in Task Manager
+## Screenshot 2 – Event 4103 Details
+I located and inspected an Event ID 4103 entry (PowerShell module logging), reviewing the event's General and Details tabs to understand the structure of event metadata, including the provider name, keywords, and logged command details.
+![Event 4103 Details](eventviewer_event_4103_details.png)
 
-Using Task Manager's Details tab, I sorted all running processes by PID and reviewed the core Windows processes covered in this room, confirming their expected PIDs, status, and hierarchy as part of the standard Windows boot sequence.
-![Task Manager Core Processes](taskmgr_core_processes.png)
+## Screenshot 3 – Log Properties
+I opened the Properties dialog for a log to review its configuration, including maximum log size, current log size, and the log's overwrite/retention behavior.
+![Log Properties](eventviewer_log_properties.png)
 
-## Process Reference Table
+## wevtutil.exe
 
-The table below summarizes each core process covered in this room, in the order they are spawned during the Windows boot sequence, along with the key indicators that would flag suspicious/masquerading activity.
+`wevtutil.exe` is a command-line utility that retrieves information about event logs and publishers, and can be used to run queries, export, archive, and clear logs. Reviewing the built-in help (`wevtutil.exe /?` and `wevtutil qe /?`) is the fastest way to learn its command structure and available options.
 
-| Process | Normal Parent | Normal Path | Key Red Flags |
-|---|---|---|---|
-| **System** (PID 4) | None / System Idle Process (0) | N/A (kernel) | PID other than 4, any parent process, multiple instances |
-| **smss.exe** | System | `%SystemRoot%\System32\` | Parent other than System, path outside System32, more than one lingering instance |
-| **csrss.exe** | Spawned by smss.exe (which self-terminates) | `%SystemRoot%\System32\` | An actual visible parent process, path outside System32, misspellings |
-| **wininit.exe** | Spawned by smss.exe (which self-terminates) | `%SystemRoot%\System32\` | An actual visible parent process, multiple instances, not running as SYSTEM |
-| **services.exe** | wininit.exe | `%SystemRoot%\System32\` | Parent other than wininit.exe, multiple instances, not running as SYSTEM |
-| **svchost.exe** | services.exe | `%SystemRoot%\System32\` | Parent other than services.exe, missing `-k` parameter, misspellings (e.g., `scvhost.exe`) |
-| **lsass.exe** | wininit.exe | `%SystemRoot%\System32\` | Parent other than wininit.exe, multiple instances, not running as SYSTEM — frequent target of credential-dumping tools like Mimikatz |
-| **winlogon.exe** | Spawned by smss.exe (which self-terminates) | `%SystemRoot%\System32\` | An actual visible parent process, altered Shell registry value, not running as SYSTEM |
-| **explorer.exe** | Spawned by userinit.exe (which exits) | `%SystemRoot%\` | An actual visible parent process, unexpected outbound TCP/IP connections, running as an unknown user |
+Key commands and options explored:
+
+\`\`\`bash
+# List all log names on the machine
+wevtutil el
+
+# Count how many log names exist
+wevtutil el | Measure-Object -Line
+
+# Query the 3 most recent events from the Application log, in text format
+wevtutil qe Application /c:3 /rd:true /f:text
+\`\`\`
+
+- `/lf` (logfile) — specifies that the given path is a log **file** rather than a live log name, allowing `query-events` to read from an exported `.evtx` file.
+- `/q` — takes an XPath query as its value, used to filter which events are returned.
+- `/rd` (reversedirection) — controls read direction; `/rd:true` returns the most recent events first.
+- `/c` (count) — sets the maximum number of events to return.
+
+## Get-WinEvent
+
+`Get-WinEvent` is a PowerShell cmdlet that retrieves events from local and remote event logs and log files, and can combine and filter events from multiple sources using XPath queries, structured XML queries, or hash tables. It replaces the older `Get-EventLog` cmdlet.
+
+\`\`\`bash
+# List all event logs on the machine
+Get-WinEvent -ListLog *
+
+# List all event log providers
+Get-WinEvent -ListProvider *
+
+# Find logs related to OpenSSH
+Get-WinEvent -ListLog * | Where-Object { $_.LogName -like "*OpenSSH*" }
+
+# Search providers matching "PowerShell"
+Get-WinEvent -ListProvider "*PowerShell*"
+
+# Count how many event IDs are defined for the PowerShell provider
+(Get-WinEvent -ListProvider Microsoft-Windows-PowerShell).Events | Measure-Object
+
+# Filter Application log events by provider using FilterHashtable (more efficient than piping to Where-Object on large logs)
+Get-WinEvent -FilterHashtable @{
+  LogName='Application'
+  ProviderName='WLMS'
+}
+
+# Find WLMS events at a specific timestamp using FilterXPath
+Get-WinEvent -LogName Application -FilterXPath "*/System/Provider[@Name='WLMS'] and */System/TimeCreated[@SystemTime='2020-12-15T01:09:08.940277500Z']"
+
+# Find logon events (Event ID 4720) for a specific user using FilterXPath
+Get-WinEvent -LogName Security -FilterXPath "*/EventData/Data[@Name='TargetUserName']='Sam' and */System/EventID=4720"
+\`\`\`
 
 ## Findings
-
-- Windows follows a strict, predictable boot chain: **System → smss.exe → csrss.exe/wininit.exe → services.exe/lsass.exe → svchost.exe**, with **winlogon.exe → userinit.exe → explorer.exe** completing the user logon session. Understanding this chain makes it much easier to spot a process running with an unexpected parent.
-- Several of these processes (csrss.exe, wininit.exe, winlogon.exe) are spawned by smss.exe, which then self-terminates. This means a legitimate instance of these processes should show **no visible parent process** in analysis tools — seeing an actual parent listed is itself a red flag, not the absence of one.
-- **svchost.exe** and **lsass.exe** are two of the most common targets for process masquerading and credential theft, respectively, since svchost.exe naturally runs many instances and lsass.exe holds credential material in memory.
-- Task Manager alone cannot show parent-child relationships, which is why tools like **Process Explorer** and **Process Hacker** are preferred for real investigative work.
+- The OpenSSH-related logs on the machine are `OpenSSH/Admin` and `OpenSSH/Operational`.
+- Using `-FilterHashtable` is significantly more efficient than piping full log results to `Where-Object`, since it filters at the source rather than sending every event object down the pipeline first.
+- `-FilterXPath` allows precise filtering on specific event fields (e.g., `TargetUserName`, `EventID`, `TimeCreated`) without needing to manually parse full event objects.
+- Enumerating providers with `-ListProvider` is a fast way to identify which providers write to which logs — useful for scoping an investigation to the right log source before running a query.
+- The Windows Event Level values for `-FilterHashtable` filtering are: LogAlways=0, Critical=1, Error=2, Warning=3, Informational=4, Verbose=5.
 
 ## Lessons Learned
-
-- Knowing what's "normal" for a system is a prerequisite to spotting what's abnormal — this applies to individual processes just as much as it applies to broader network or user behavior baselining.
-- Malware authors commonly rely on subtle misspellings (e.g., `scvhost.exe` instead of `svchost.exe`) or incorrect file paths to hide in plain sight among legitimate system processes — a quick path and parent-process check can catch this.
-- PIDs are assigned somewhat randomly at boot (except PID 4, which is always reserved for System), so investigators should never rely on a specific PID number matching between environments — instead, focus on relationships (parent process, path, account) to validate legitimacy.
+- Manually browsing Event Viewer doesn't scale — command-line tools like `wevtutil` and `Get-WinEvent` are essential once log volume grows beyond a handful of entries.
+- Off-by-one counting errors are easy to make when manually eyeballing terminal output; piping to `Measure-Object` gives an exact, reliable count instead of miscounting scrolled output.
+- Building XPath and hash table filters requires precision — a single quoting mismatch or incorrect field name will cause the query to silently return zero results rather than error out, so it's worth double-checking field names (e.g., `TargetUserName` vs `TargetUser`) against the actual event schema in Event Viewer before assuming a query is broken.
+- A query can be syntactically correct and still return no results if the underlying log data doesn't contain a matching event — this isn't necessarily a mistake in the query itself.
 
 ## References
-
-1. TryHackMe. *Core Windows Processes*. https://tryhackme.com
-2. Microsoft. *Windows Internals, 6th Edition*.
-3. Microsoft Docs. *User-Mode and Kernel-Mode*. https://docs.microsoft.com/en-us/windows-hardware/drivers/gettingstarted/user-mode-and-kernel-mode
-4. Wikipedia. *Session Manager Subsystem*. https://en.wikipedia.org/wiki/Session_Manager_Subsystem
-5. Wikipedia. *Client/Server Runtime Subsystem*. https://en.wikipedia.org/wiki/Client/Server_Runtime_Subsystem
-6. Wikipedia. *Service Control Manager*. https://en.wikipedia.org/wiki/Service_Control_Manager
-7. Wikipedia. *Svchost.exe*. https://en.wikipedia.org/wiki/Svchost.exe
-8. Hexacorn Blog. *The Typographical and Homomorphic Abuse of svchost.exe and Other Popular File Names*. https://www.hexacorn.com/blog/2015/12/18/the-typographical-and-homomorphic-abuse-of-svchost-exe-and-other-popular-file-names/
+1. TryHackMe. *Windows Event Logs*. https://tryhackme.com
+2. Microsoft Docs. *wevtutil*. https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil
+3. Microsoft Docs. *Get-WinEvent*. https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.diagnostics/get-winevent
