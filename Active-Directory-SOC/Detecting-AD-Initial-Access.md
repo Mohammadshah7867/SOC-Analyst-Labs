@@ -160,6 +160,49 @@ Since NPS runs on the Domain Controller (`THM-DC`) in this lab environment, the 
 
 ![VPN Security Logon Correlation](detecting_ad_initial_access_vpn_security_logon_correlation.png)
 
+## Screenshot 13 - Investigation Challenge: Independent Web Shell Investigation
+As a final, independent exercise, the room provided a separate investigation environment with its own Splunk instance, presenting the same class of alert (an unusual volume of HTTP 404 responses from a single external IP against an IIS web server) without step-by-step guidance. I applied the same methodology developed earlier in this room to reconstruct the attack independently:
+
+**Identifying the web shell filename** - starting from the same 404-burst-to-successful-request pivot used in the walkthrough:
+```spl
+index=iis sc_status=404
+| stats count by c_ip
+| sort - count
+```
+followed by:
+```spl
+index=iis c_ip="{SCANNING_IP}" sc_status=200
+| stats count by cs_uri_stem
+| sort - count
+```
+
+**Extracting the first reconnaissance command** - filtering for the identified web shell and sorting chronologically to isolate the earliest interaction:
+```spl
+index=iis cs_uri_stem="*/{WEBSHELL_FILENAME}"
+| table _time, c_ip, cs_method, cs_uri_query, sc_status
+| sort _time
+```
+
+**Identifying the upload path** - locating the POST request responsible for writing the web shell to disk:
+```spl
+index=iis cs_method=POST cs_uri_query="*{WEBSHELL_FILENAME}*"
+| table _time, c_ip, cs_uri_stem, cs_uri_query, sc_status
+| sort _time
+```
+
+**Determining the exact deployment time** - pivoting to Sysmon file creation telemetry:
+```spl
+index=win EventCode=11 TargetFilename="*{WEBSHELL_FILENAME}"
+| table _time, Image, TargetFilename
+```
+
+This exercise confirmed that the three-stage methodology built throughout this room (scope the scanning activity, identify the deployed artifact, correlate endpoint telemetry for execution and deployment timing) applies consistently to a fresh, previously unseen environment, without relying on prior knowledge of specific IPs, filenames, or timestamps.
+
+![Investigation Challenge - Web Shell Filename](detecting_ad_initial_access_challenge_webshell_filename.png)
+![Investigation Challenge - First Reconnaissance Command](detecting_ad_initial_access_challenge_first_recon_command.png)
+![Investigation Challenge - Upload URI Path](detecting_ad_initial_access_challenge_upload_uri_path.png)
+![Investigation Challenge - Deployment Time](detecting_ad_initial_access_challenge_deployment_time.png)
+
 ## Findings
 - Initial access was achieved through directory scanning of an IIS-hosted application, followed by discovery and exploitation of a writable default directory (`/aspnet_client/`) to host a malicious `.aspx` web shell.
 - The web shell accepted attacker commands via an HTTP query string parameter, allowing remote command execution without any additional attacker tooling beyond a web browser or HTTP client.
@@ -172,6 +215,7 @@ Since NPS runs on the Domain Controller (`THM-DC`) in this lab environment, the 
 - A third investigation targeting the VPN/RADIUS authentication layer identified a cluster of NPS 6273 (denied) events against a specific account, followed by a 6272 (granted) event, confirming a successful credential attack against the VPN gateway - mirroring the OWA brute-force pattern but at a different layer of the authentication stack.
 - This VPN compromise was corroborated on the Domain Controller via a matching cluster of Windows Security 4625/4624 events for the same account, since NPS in this lab environment runs directly on the DC.
 - VPN-based initial access is a well-documented technique for real-world ransomware groups such as Akira, which per CISA advisories has used VPN brute-forcing, password spraying, and purchased credentials from initial access brokers to gain footholds, in some cases exfiltrating data within two hours of initial access.
+- An independent investigation challenge, using a separate environment with no prior context, was successfully worked through using the same methodology: identifying the web shell filename, its first reconnaissance command, its upload URI path, and its exact deployment timestamp - confirming the underlying detection and investigation approach generalizes beyond the specific walkthrough environment.
 
 ## Lessons Learned
 - Reinforced that AD-integrated services dramatically increase the impact of what would otherwise be a contained, single-server compromise - a vulnerability in one web application can become a foothold into the entire domain.
@@ -186,6 +230,7 @@ Since NPS runs on the Domain Controller (`THM-DC`) in this lab environment, the 
 - Reinforced that not every authentication failure event indicates an attack: NPS Event 6273's Reason Code field distinguishes genuine credential attacks (code 16) from unrelated authorization or configuration issues (codes 48 and 65) - misreading this field could lead to chasing false positives or, worse, dismissing a real credential attack as a config problem.
 - Recognized that a sufficiently patient or well-resourced attacker (one who already possesses valid credentials, whether purchased, phished, or reused) can authenticate with a single clean success event and no preceding failures, making pure authentication-log analysis insufficient on its own - detection in that scenario shifts entirely to post-authentication behavioral analysis, reinforcing why account activity monitoring after successful login matters as much as monitoring the login attempt itself.
 - Observed the same investigative methodology (scope the attack -> identify the targeted/compromised account -> correlate across log sources) applied consistently across three different attack surfaces in this room (web shell/IIS, OWA/Exchange, and VPN/NPS), reinforcing that the underlying SOC investigation process generalizes well even as the specific log sources and event IDs change.
+- Completing the independent investigation challenge without step-by-step instructions was the clearest confirmation that the methodology, not just the specific queries, had been internalized - being able to reconstruct the correct search logic from first principles (what event type would capture this activity, what field would contain this value) is a more durable skill than memorizing exact SPL syntax.
 
 ## References
 - [TryHackMe - Active Directory for SOC: Detecting AD Initial Access](https://tryhackme.com/module/active-directory-for-soc)
