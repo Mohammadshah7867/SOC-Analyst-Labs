@@ -128,6 +128,38 @@ This query checks specifically for requests to `/ecp` (the Exchange Control Pane
 
 ![OWA Post-Authentication Activity](detecting_ad_initial_access_owa_post_auth_activity.png)
 
+## Screenshot 10 - VPN Attack Scope (NPS Denial Events)
+The final investigation scenario in this room shifts the log source from IIS to NPS (Network Policy Server), since VPN gateways are typically non-Windows appliances that authenticate against AD via RADIUS rather than directly. To scope a potential VPN credential attack, I queried NPS denial events (Event 6273), grouped by targeted username and the RADIUS client IP that forwarded the request:
+```spl
+index=win EventCode=6273
+| stats count by User_Account_Name, Client_IP_Address
+| sort - count
+```
+This identified which usernames were targeted by failed VPN authentication attempts. Note that `Client_IP_Address` in NPS events reflects the VPN gateway's IP (the RADIUS client forwarding the request), not the original source IP of whoever is actually attempting to authenticate to the VPN.
+
+![VPN Attack Scope](detecting_ad_initial_access_vpn_attack_scope_6273.png)
+
+## Screenshot 11 - Confirming the Compromised Account
+To determine whether the targeted account was ultimately compromised, I filtered NPS events for both denials and grants against that specific account:
+```spl
+index=win EventCode IN (6273,6272) User_Account_Name={COMPROMISED_USER}
+| table _time, EventCode, User_Account_Name, Client_IP_Address
+```
+This revealed a cluster of 6273 (denied) events followed by a 6272 (granted) event for the same account - the classic brute-force success pattern, mirroring what was observed in the OWA investigation but at the VPN/RADIUS layer instead of the web layer.
+
+![VPN Compromised Account Pattern](detecting_ad_initial_access_vpn_compromised_account_6272_6273.png)
+
+## Screenshot 12 - Correlating with Windows Security Logon Events
+Finally, I cross-referenced the NPS authentication result with Windows Security logon events for the same account:
+```spl
+index=win EventCode IN (4624, 4625) user={COMPROMISED_USER}
+| table _time, host, user, EventCode, Logon_Type
+| sort _time
+```
+Since NPS runs on the Domain Controller (`THM-DC`) in this lab environment, the logon session events appear directly on the DC: a cluster of 4625 (failed logon) entries followed by a 4624 (successful logon), with a timestamp closely matching the NPS 6272 grant event from Step 2. These Security events also include the `LogonId` field, which enables tracing the compromised account's session activity after authentication - a natural next step for extending this investigation into post-compromise behavior.
+
+![VPN Security Logon Correlation](detecting_ad_initial_access_vpn_security_logon_correlation.png)
+
 ## Findings
 - Initial access was achieved through directory scanning of an IIS-hosted application, followed by discovery and exploitation of a writable default directory (`/aspnet_client/`) to host a malicious `.aspx` web shell.
 - The web shell accepted attacker commands via an HTTP query string parameter, allowing remote command execution without any additional attacker tooling beyond a web browser or HTTP client.
@@ -137,6 +169,9 @@ This query checks specifically for requests to `/ecp` (the Exchange Control Pane
 - A separate OWA brute-force investigation identified a burst of authentication POST requests from a single source IP against `/owa/auth.owa`, targeting one specific account (confirmed via Windows Security Event 4625, Logon_Type 8) rather than spreading attempts across many accounts, indicating a targeted brute-force rather than a password-spraying campaign.
 - The brute-force attempt ultimately succeeded, evidenced by a cluster of 4625 failures followed by a 4624 success for the targeted account, both logged locally on the IIS/Exchange server rather than the Domain Controller.
 - Post-authentication IIS activity from the attacker's IP was reviewed for access to `/ecp` or `/powershell`, which would indicate escalation from simple mailbox access toward administrative control of the Exchange environment.
+- A third investigation targeting the VPN/RADIUS authentication layer identified a cluster of NPS 6273 (denied) events against a specific account, followed by a 6272 (granted) event, confirming a successful credential attack against the VPN gateway - mirroring the OWA brute-force pattern but at a different layer of the authentication stack.
+- This VPN compromise was corroborated on the Domain Controller via a matching cluster of Windows Security 4625/4624 events for the same account, since NPS in this lab environment runs directly on the DC.
+- VPN-based initial access is a well-documented technique for real-world ransomware groups such as Akira, which per CISA advisories has used VPN brute-forcing, password spraying, and purchased credentials from initial access brokers to gain footholds, in some cases exfiltrating data within two hours of initial access.
 
 ## Lessons Learned
 - Reinforced that AD-integrated services dramatically increase the impact of what would otherwise be a contained, single-server compromise - a vulnerability in one web application can become a foothold into the entire domain.
@@ -147,6 +182,10 @@ This query checks specifically for requests to `/ecp` (the Exchange Control Pane
 - Learned that HTTP status codes alone are insufficient to determine authentication outcome in OWA logs, since both successful and failed logins return a 302 redirect; the query string (`reason=2` for failures) or a pivot to Windows Security logs is required to disambiguate.
 - Reinforced that IIS-hosted authentication events (4624/4625) logged locally on a web server often lack the true attacker source IP in the `Source_Network_Address` field, since the logon is processed locally by IIS - meaning IIS access logs and Windows Security logs must be used together, not interchangeably, to fully attribute an attack.
 - Practiced distinguishing brute-force (many attempts against one account) from password spraying (few attempts spread across many accounts) using the same underlying IIS signal, disambiguated only by pivoting to Windows Security logs - a reminder that identical network-layer patterns can represent different attacker techniques and require endpoint/directory-level context to correctly classify.
+- Learned that VPN gateway detection depends entirely on whether RADIUS/NPS is configured in the environment; without it, VPN authentication events may only exist as 4624/4625 on the gateway itself and 4776 on the DC, meaning the availability of NPS event data is itself an environment-specific detail worth verifying before an investigation.
+- Reinforced that not every authentication failure event indicates an attack: NPS Event 6273's Reason Code field distinguishes genuine credential attacks (code 16) from unrelated authorization or configuration issues (codes 48 and 65) - misreading this field could lead to chasing false positives or, worse, dismissing a real credential attack as a config problem.
+- Recognized that a sufficiently patient or well-resourced attacker (one who already possesses valid credentials, whether purchased, phished, or reused) can authenticate with a single clean success event and no preceding failures, making pure authentication-log analysis insufficient on its own - detection in that scenario shifts entirely to post-authentication behavioral analysis, reinforcing why account activity monitoring after successful login matters as much as monitoring the login attempt itself.
+- Observed the same investigative methodology (scope the attack -> identify the targeted/compromised account -> correlate across log sources) applied consistently across three different attack surfaces in this room (web shell/IIS, OWA/Exchange, and VPN/NPS), reinforcing that the underlying SOC investigation process generalizes well even as the specific log sources and event IDs change.
 
 ## References
 - [TryHackMe - Active Directory for SOC: Detecting AD Initial Access](https://tryhackme.com/module/active-directory-for-soc)
