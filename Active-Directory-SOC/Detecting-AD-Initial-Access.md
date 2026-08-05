@@ -80,12 +80,63 @@ This returned the precise timestamp the web shell file was created on the target
 
 ![Web Shell Deployment Timestamp](detecting_ad_initial_access_webshell_deployment_time.png)
 
+## Screenshot 6 - OWA Brute-Force Burst Detection
+Exchange Outlook Web Access (OWA) is one of the most commonly targeted login pages in enterprise environments, since it is internet-facing by design and serves as the gateway to corporate email. A real-world precedent for this attack pattern is the January 2024 Midnight Blizzard campaign against Microsoft's own corporate Exchange environment, where a legacy test tenant account without MFA was compromised via password spraying.
+
+To detect a brute-force attempt against OWA, I queried IIS logs for a burst of POST requests to the OWA authentication endpoint, grouped into 5-minute windows per source IP:
+```spl
+index=iis cs_uri_stem="/owa/auth.owa" cs_method=POST
+| bin _time span=5m
+| stats count by _time, c_ip
+| where count > 10
+| sort - count
+```
+This surfaced a single IP address sending a high volume of authentication POST requests within a short window - a clear brute-force (or password spray) signal. At the IIS level alone, brute force and password spraying look identical, since IIS logs do not capture which specific account was targeted.
+
+![OWA Brute-Force Burst](detecting_ad_initial_access_owa_bruteforce_burst.png)
+
+## Screenshot 7 - Identifying the Targeted Account
+Since IIS logs don't capture the targeted username for OWA requests, I pivoted to Windows Security logs (Event 4625 - failed logon) to determine whether the failed attempts clustered around one account (brute force) or were spread across many accounts (password spraying):
+```spl
+index=win EventCode=4625
+| stats count by user, Logon_Type
+| sort - count
+```
+The account with the highest failure count was identified as the brute-force target, logged under **Logon_Type 8 (NetworkCleartext)** - the logon type IIS-hosted applications use when authenticating against Active Directory on behalf of a web-based login.
+
+![OWA Targeted Account](detecting_ad_initial_access_owa_targeted_account.png)
+
+## Screenshot 8 - Correlating the Login Timeline
+To determine whether the brute-force attempt ultimately succeeded, I queried both successful (4624) and failed (4625) logon events for the targeted account, sorted chronologically:
+```spl
+index=win EventCode IN (4624, 4625) user="{TARGETED_USER}" Logon_Type=8
+| table _time, EventCode, user, Process_Name, Logon_Type
+| sort _time
+```
+This revealed a cluster of 4625 (failure) events followed by a 4624 (success) event, confirming the attacker eventually authenticated successfully. These events appear on the web server itself rather than the Domain Controller, since IIS handles the authentication locally. Notably, the `Source_Network_Address` field on these events was empty/local rather than showing the attacker's real IP - the true source IP is only visible in the IIS logs, reinforcing why both log sources are needed together for a complete picture.
+
+![OWA Login Timeline](detecting_ad_initial_access_owa_login_timeline.png)
+
+## Screenshot 9 - Post-Authentication Activity Check
+With confirmed successful authentication, the final step was checking whether the attacker accessed any sensitive Exchange paths after logging in, which would indicate escalation beyond simple mailbox access:
+```spl
+index=iis c_ip="{ATTACKER_IP}"
+| stats count by cs_uri_stem
+| sort - count
+```
+This query checks specifically for requests to `/ecp` (the Exchange Control Panel, the administrative interface) or `/powershell` (Exchange Remote PowerShell) - either of which would indicate the attacker moved beyond email access toward administrative control, such as creating mail forwarding rules or exporting mailboxes.
+
+![OWA Post-Authentication Activity](detecting_ad_initial_access_owa_post_auth_activity.png)
+
 ## Findings
 - Initial access was achieved through directory scanning of an IIS-hosted application, followed by discovery and exploitation of a writable default directory (`/aspnet_client/`) to host a malicious `.aspx` web shell.
 - The web shell accepted attacker commands via an HTTP query string parameter, allowing remote command execution without any additional attacker tooling beyond a web browser or HTTP client.
 - The core detection signature for this attack - `w3wp.exe` spawning `cmd.exe`/`powershell.exe` - was confirmed directly in Sysmon process creation telemetry, corroborating the activity observed in the IIS access logs.
 - IIS logs and endpoint (Sysmon/Security) logs are timestamped differently by default (UTC vs. local server time) and can show minor discrepancies due to buffered logging and network latency; both should be normalized before building a combined timeline during an investigation.
 - This attack chain (web-facing application compromise -> web shell -> local code execution) represents the first stage of a broader AD compromise: once code execution is achieved on a domain-joined IIS server, an attacker is positioned to pivot toward credential theft and lateral movement using the techniques covered in later rooms of this module.
+- A separate OWA brute-force investigation identified a burst of authentication POST requests from a single source IP against `/owa/auth.owa`, targeting one specific account (confirmed via Windows Security Event 4625, Logon_Type 8) rather than spreading attempts across many accounts, indicating a targeted brute-force rather than a password-spraying campaign.
+- The brute-force attempt ultimately succeeded, evidenced by a cluster of 4625 failures followed by a 4624 success for the targeted account, both logged locally on the IIS/Exchange server rather than the Domain Controller.
+- Post-authentication IIS activity from the attacker's IP was reviewed for access to `/ecp` or `/powershell`, which would indicate escalation from simple mailbox access toward administrative control of the Exchange environment.
 
 ## Lessons Learned
 - Reinforced that AD-integrated services dramatically increase the impact of what would otherwise be a contained, single-server compromise - a vulnerability in one web application can become a foothold into the entire domain.
@@ -93,6 +144,9 @@ This returned the precise timestamp the web shell file was created on the target
 - Practiced correlating two independent log sources (IIS access logs and Sysmon endpoint telemetry) to validate a single finding from two angles - confirming that a web request wasn't just attempted, but actually resulted in code execution on the host.
 - Reinforced the importance of timestamp normalization (UTC vs. local time) when building a cross-source investigation timeline, a detail that's easy to overlook and can lead to incorrect sequencing of events if missed.
 - Built a repeatable, staged investigation methodology (scan detection -> artifact discovery -> command extraction -> execution confirmation -> deployment timing) that generalizes well beyond this specific web shell scenario to other web-based initial access investigations.
+- Learned that HTTP status codes alone are insufficient to determine authentication outcome in OWA logs, since both successful and failed logins return a 302 redirect; the query string (`reason=2` for failures) or a pivot to Windows Security logs is required to disambiguate.
+- Reinforced that IIS-hosted authentication events (4624/4625) logged locally on a web server often lack the true attacker source IP in the `Source_Network_Address` field, since the logon is processed locally by IIS - meaning IIS access logs and Windows Security logs must be used together, not interchangeably, to fully attribute an attack.
+- Practiced distinguishing brute-force (many attempts against one account) from password spraying (few attempts spread across many accounts) using the same underlying IIS signal, disambiguated only by pivoting to Windows Security logs - a reminder that identical network-layer patterns can represent different attacker techniques and require endpoint/directory-level context to correctly classify.
 
 ## References
 - [TryHackMe - Active Directory for SOC: Detecting AD Initial Access](https://tryhackme.com/module/active-directory-for-soc)
