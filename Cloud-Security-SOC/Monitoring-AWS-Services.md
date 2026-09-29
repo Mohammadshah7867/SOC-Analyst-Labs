@@ -79,12 +79,8 @@ Sorted all IAM-related events chronologically to confirm the exact order of the 
 ![Second Discovery command identified via chronological event ordering](./iam_discovery_second_command.png)
 
 **Screenshot 12 – Second IAM user discovered by the attacker**
-Following a broad `ListUsers` enumeration, identified the specific username the attacker targeted next via a `ListAccessKeys` lookup — distinct from the attacker's own compromised identity.
+Following a broad `ListUsers` enumeration, the attacker pivoted to a `ListAccessKeys` lookup targeting a specific username — distinct from their own compromised identity. Expanding the event's `requestParameters` revealed the targeted username, confirming which second account the attacker discovered and moved to backdoor.
 ![Second IAM user identified via ListAccessKeys targeting](./iam_discovered_target_user.png)
-
-**Screenshot 13 – Backdoor action against the discovered user**
-Confirmed how the attacker established persistence against the newly discovered user account by identifying the specific write action (credential or permission change) performed against it.
-![Backdoor action confirmed against the discovered user](./iam_backdoor_action_target_user.png)
 
 ### Task 6 — Denial of Wallet Attacks
 This task was conceptual, with no hands-on Splunk lab. Covered Denial of Wallet (DoW) — a cloud-era evolution of DoS where, instead of taking a service offline, an attacker drives up the victim's cloud costs through high-volume legitimate-looking requests (e.g., repeated large S3 downloads, or triggering EC2 Auto Scaling via a traffic flood). Even when the underlying DoS fails to cause downtime, the resulting AWS bill can still cause real financial harm. Covered the SOC's role (detection and short-term triage rather than full remediation) and the four-step general mitigation approach: validate whether the resource should be public, block bad actors with a WAF, cache/rate-limit with a CDN, and optimize compute efficiency.
